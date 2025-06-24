@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Art Gallery Satisfaction Studio</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+  <style>
+    body {
+      background: linear-gradient(rgba(255, 245, 235, 0.9), rgba(255, 245, 235, 0.9)), 
+                  url('https://images.unsplash.com/photo-1518998053901-5348d3961a04?ixlib=rb-4.0.3&auto=format&fit=crop&w=1350&q=80') no-repeat center center fixed;
+      background-size: cover;
+      font-family: 'Playfair Display', serif;
+    }
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+    }
+    .input-shadow {
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+      transition: all 0.3s ease;
+    }
+    .input-shadow:focus {
+      box-shadow: 0 6px 20px rgba(59, 130, 246, 0.3);
+      transform: translateY(-2px);
+    }
+    .btn {
+      transition: all 0.3s ease;
+      transform: perspective(1px) translateZ(0);
+    }
+    .btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+    }
+    .chart-container {
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 20px;
+      background: rgba(255, 255, 255, 0.95);
+      border-radius: 20px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+      display: none;
+    }
+    .chart-container.visible {
+      display: block;
+    }
+    .error-message {
+      color: #dc2626;
+      font-size: 0.875rem;
+      margin-top: 0.25rem;
+      display: none;
+    }
+    .error-message.visible {
+      display: block;
+    }
+    .shake {
+      animation: shake 0.5s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+    }
+    @keyframes shake {
+      10%, 90% { transform: translateX(-1px); }
+      20%, 80% { transform: translateX(2px); }
+      30%, 50%, 70% { transform: translateX(-4px); }
+      40%, 60% { transform: translateX(4px); }
+    }
+    @media (max-width: 640px) {
+      .chart-container {
+        max-width: 100%;
+        padding: 15px;
+      }
+      .container {
+        padding: 10px;
+      }
+      .segment-data {
+        flex-wrap: wrap;
+      }
+    }
+  </style>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&display=swap" rel="stylesheet">
+</head>
+<body class="min-h-screen flex flex-col text-gray-800">
+  <!-- Header -->
+  <header class="w-full bg-gradient-to-r from-blue-900 to-indigo-800 text-white py-4 shadow-lg">
+    <div class="container flex items-center justify-between">
+      <div class="flex items-center space-x-3">
+        <i class="fas fa-paint-brush text-2xl"></i>
+        <h1 class="text-2xl font-bold">Art Gallery Studio</h1>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="container flex-grow py-8">
+    <div class="bg-white bg-opacity-95 rounded-2xl p-8 shadow-2xl">
+      <h1 class="text-3xl font-bold text-center mb-8 text-blue-900">
+        <i class="fas fa-chart-pie mr-2"></i>Create Your Satisfaction Chart
+      </h1>
+
+      <!-- Input Form -->
+      <div class="space-y-6 mb-8">
+        <div>
+          <label for="chartTitle" class="block text-lg font-medium text-blue-900 mb-2">
+            <i class="fas fa-heading mr-2"></i>Chart Title
+          </label>
+          <input type="text" id="chartTitle" value="Visitor Satisfaction" 
+                 class="w-full p-3 rounded-lg border border-gray-200 input-shadow focus:outline-none focus:border-blue-500">
+        </div>
+        <div>
+          <label for="focusArea" class="block text-lg font-medium text-blue-900 mb-2">
+            <i class="fas fa-folder-open mr-2"></i>Focus Area
+          </label>
+          <select id="focusArea" class="w-full p-3 rounded-lg border border-gray-200 input-shadow focus:outline-none focus:border-blue-500">
+            <option value="Curatorial">Curatorial</option>
+            <option value="Analytics">Analytics</option>
+            <option value="Visitor Experience">Visitor Experience</option>
+            <option value="Exhibits">Exhibits</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Segment Input -->
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
+        <div>
+          <label for="segmentName" class="block text-lg font-medium text-blue-900 mb-2">
+            <i class="fas fa-tag mr-2"></i>Segment Name
+          </label>
+          <input type="text" id="segmentName" placeholder="e.g., Exhibit A" 
+                 class="w-full p-3 rounded-lg border border-gray-200 input-shadow focus:outline-none focus:border-blue-500">
+          <p id="segmentNameError" class="error-message">Segment name cannot be empty.</p>
+        </div>
+        <div>
+          <label for="segmentValue" class="block text-lg font-medium text-blue-900 mb-2">
+            <i class="fas fa-star mr-2"></i>Value (0-100)
+          </label>
+          <input type="number" id="segmentValue" placeholder="e.g., 50" min="0" max="100" 
+                 class="w-full p-3 rounded-lg border border-gray-200 input-shadow focus:outline-none focus:border-blue-500">
+          <p id="segmentValueError" class="error-message">Value must be a number between 0 and 100.</p>
+        </div>
+        <div class="flex items-end">
+          <button id="addSegment" class="w-full btn bg-yellow-500 text-white py-3 rounded-lg hover:bg-yellow-600">
+            <i class="fas fa-plus mr-2"></i><span id="addSegmentText">Add Segment</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Segment List -->
+      <div id="segmentList" class="mb-8">
+        <h2 class="text-xl font-semibold text-blue-900 mb-4">
+          <i class="fas fa-list mr-2"></i>Segments
+        </h2>
+        <ul id="segmentItems" class="space-y-3">
+          <p class="text-gray-500 italic">No segments added yet.</p>
+        </ul>
+      </div>
+
+      <!-- Chart Preview -->
+      <div class="chart-container">
+        <canvas id="satisfactionChart"></canvas>
+        
+        <!-- Reset Button -->
+        <div class="mb-8 text-center">
+          <button id="resetChart" class="btn bg-red-600 text-white py-3 px-6 mt-5 rounded-lg hover:bg-red-700">
+            <i class="fas fa-undo mr-2"></i>Reset Chart
+          </button>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Footer -->
+  <footer class="w-full bg-blue-900 text-white py-6">
+    <div class="container flex flex-col md:flex-row justify-between items-center">
+      <div class="mb-4 md:mb-0">
+        <h3 class="text-lg font-bold">Art Gallery Studio</h3>
+        <p class="text-sm">Crafting Visual Experiences Since 2025</p>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    // Initialize Chart.js
+    const ctx = document.getElementById('satisfactionChart').getContext('2d');
+    let chartData = {
+      labels: [],
+      datasets: [{
+        data: [],
+        backgroundColor: ['#FCA5A5', '#FBBF24', '#34D399', '#60A5FA', '#A78BFA'],
+        hoverOffset: 30,
+        borderWidth: 2,
+        borderColor: '#fff'
+      }]
+    };
+    const chart = new Chart(ctx, {
+      type: 'doughnut',
+      data: chartData,
+      options: {
+        responsive: true,
+        plugins: {
+          legend: { position: 'top', labels: { font: { family: 'Playfair Display', size: 14 } } },
+          title: { 
+            display: true, 
+            text: 'Visitor Satisfaction', 
+            font: { family: 'Playfair Display', size: 20, weight: 'bold' },
+            color: '#1E3A8A'
+          },
+          tooltip: {
+            backgroundColor: 'rgba(30, 58, 138, 0.8)',
+            titleFont: { family: 'Playfair Display', size: 14, weight: 'bold' },
+            bodyFont: { family: 'Playfair Display', size: 12 },
+            padding: 10,
+            callbacks: {
+              label: function(context) {
+                const segment = segments[context.dataIndex];
+                const total = segments.reduce((sum, s) => sum + s.value, 0);
+                const percentage = total > 0 ? ((segment.value / total) * 100).toFixed(1) : 0;
+                return [
+                  `Value: ${segment.value}`,
+                  `Percentage: ${percentage}%`,
+                  `Area: ${segment.focusArea}`
+                ];
+              }
+            }
+          }
+        },
+        animation: {
+          animateScale: true,
+          animateRotate: true
+        }
+      }
+    });
+
+    let segments = [];
+    let editIndex = null;
+    const chartTitleInput = document.getElementById('chartTitle');
+    const segmentNameInput = document.getElementById('segmentName');
+    const segmentValueInput = document.getElementById('segmentValue');
+    const focusAreaSelect = document.getElementById('focusArea');
+    const addSegmentBtn = document.getElementById('addSegment');
+    const addSegmentText = document.getElementById('addSegmentText');
+    const segmentList = document.getElementById('segmentItems');
+    const resetChartBtn = document.getElementById('resetChart');
+    const chartContainer = document.querySelector('.chart-container');
+    const segmentNameError = document.getElementById('segmentNameError');
+    const segmentValueError = document.getElementById('segmentValueError');
+
+    function clearErrors() {
+      segmentNameError.classList.remove('visible');
+      segmentValueError.classList.remove('visible');
+      segmentNameInput.classList.remove('shake');
+      segmentValueInput.classList.remove('shake');
+    }
+
+    // Update chart and toggle chart visibility
+    function updateChart() {
+      chart.data.labels = segments.map(s => s.name);
+      chart.data.datasets[0].data = segments.map(s => s.value);
+      chart.options.plugins.title.text = chartTitleInput.value || 'Visitor Satisfaction';
+      chart.update();
+      renderSegmentList();
+      chartContainer.classList.toggle('visible', segments.length > 0);
+    }
+
+    // Render segment list
+    function renderSegmentList() {
+      segmentList.innerHTML = segments.length ? '' : '<p class="text-gray-500 italic">No segments added yet.</p>';
+      segments.forEach((segment, index) => {
+        const total = segments.reduce((sum, s) => sum + s.value, 0);
+        const percentage = total > 0 ? ((segment.value / total) * 100).toFixed(1) : 0;
+        const li = document.createElement('li');
+        li.className = 'flex items-center justify-between p-3 bg-gray-100 rounded-lg shadow-sm hover:bg-gray-200 transition';
+        li.innerHTML = `
+          <div class="text-blue-900 segment-data flex items-center space-x-2 text-base">
+            <span><i class="fas fa-circle mr-2" style="color: ${segment.color}"></i><strong>${segment.name}</strong></span>
+            <span class="text-gray-500">|</span>
+            <span><strong>Value:</strong> ${segment.value}</span>
+            <span class="text-gray-500">|</span>
+            <span><strong>Percentage:</strong> ${percentage}%</span>
+            <span class="text-gray-500">|</span>
+            <span><strong>Area:</strong> ${segment.focusArea}</span>
+          </div>
+          <div class="space-x-2">
+            <button class="edit-btn text-blue-600 hover:text-blue-800 transition" data-index="${index}">
+              <i class="fas fa-edit"></i> Edit
+            </button>
+            <button class="delete-btn text-red-600 hover:text-red-700 transition" data-index="${index}">
+              <i class="fas fa-trash"></i> Delete
+            </button>
+          </div>
+        `;
+        segmentList.appendChild(li);
+      });
+    }
+
+    // Add or update segment
+    addSegmentBtn.addEventListener('click', () => {
+      const name = segmentNameInput.value.trim();
+      const value = parseFloat(segmentValueInput.value);
+      const focusArea = focusAreaSelect.value;
+      let hasError = false;
+
+      clearErrors();
+
+      if (!name) {
+        segmentNameError.classList.add('visible');
+        segmentNameInput.classList.add('shake');
+        hasError = true;
+      }
+      if (isNaN(value) || value < 0 || value > 100) {
+        segmentValueError.classList.add('visible');
+        segmentValueInput.classList.add('shake');
+        hasError = true;
+      }
+
+      if (hasError) {
+        setTimeout(clearErrors, 2000);
+        return;
+      }
+
+      if (editIndex !== null) {
+        segments[editIndex] = { ...segments[editIndex], name, value, focusArea };
+        editIndex = null;
+        addSegmentText.textContent = 'Add Segment';
+      } else {
+        segments.push({ 
+          name, 
+          value, 
+          focusArea,
+          color: chartData.datasets[0].backgroundColor[segments.length % 5] 
+        });
+      }
+      segmentNameInput.value = '';
+      segmentValueInput.value = '';
+      updateChart();
+    });
+
+    // Clear errors on input
+    segmentNameInput.addEventListener('input', clearErrors);
+    segmentValueInput.addEventListener('input', clearErrors);
+
+    // Edit or delete segment
+    segmentList.addEventListener('click', (e) => {
+      const button = e.target.closest('button[data-index]');
+      if (!button) return;
+      const index = parseInt(button.dataset.index);
+      if (isNaN(index) || !segments[index]) return;
+
+      if (button.classList.contains('edit-btn')) {
+        segmentNameInput.value = segments[index].name;
+        segmentValueInput.value = segments[index].value;
+        focusAreaSelect.value = segments[index].focusArea;
+        editIndex = index;
+        addSegmentText.textContent = 'Update Segment';
+      } else if (button.classList.contains('delete-btn')) {
+        Swal.fire({
+          title: 'Delete Segment',
+          text: `Are you sure you want to delete the segment "${segments[index].name}"?`,
+          icon: 'warning',
+          showCancelButton: true,
+          confirmButtonColor: '#d33',
+          cancelButtonColor: '#3085d6',
+          confirmButtonText: 'Yes, delete it!'
+        }).then((result) => {
+          if (result.isConfirmed) {
+            segments.splice(index, 1);
+            updateChart();
+            Swal.fire('Deleted!', 'The segment has been deleted.', 'success');
+          }
+        });
+      }
+    });
+
+    // Reset chart
+    resetChartBtn.addEventListener('click', () => {
+      Swal.fire({
+        title: 'Reset Chart',
+        text: 'Are you sure you want to reset the chart? All segments will be deleted.',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        cancelButtonColor: '#3085d6',
+        confirmButtonText: 'Yes, reset it!'
+      }).then((result) => {
+        if (result.isConfirmed) {
+          segments = [];
+          chartTitleInput.value = 'Visitor Satisfaction';
+          segmentNameInput.value = '';
+          segmentValueInput.value = '';
+          focusAreaSelect.value = 'Curatorial';
+          editIndex = null;
+          addSegmentText.textContent = 'Add Segment';
+          updateChart();
+          Swal.fire('Reset!', 'The chart has been reset.', 'success');
+        }
+      });
+    });
+
+    // Update chart title on input
+    chartTitleInput.addEventListener('input', updateChart);
+
+    // Initialize segment list on page load
+    renderSegmentList();
+  </script>
+</body>
+</html>
